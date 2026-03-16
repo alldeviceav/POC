@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vatanix – Demo Device Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0e14;--surface:#111720;--card:#151e2b;--border:#1f2e40;
+  --green:#22c55e;--green-dim:#16a34a;--green-glow:rgba(34,197,94,.15);
+  --blue:#38bdf8;--orange:#f97316;--red:#ef4444;--yellow:#eab308;--purple:#a855f7;
+  --text:#e2eaf4;--text-muted:#6b8099;--text-dim:#3d556e;
+  --font-head:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
+  --radius:10px;--shadow:0 4px 24px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;min-height:100vh}
+
+/* LOGIN */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;background-image:radial-gradient(ellipse at 20% 50%,rgba(34,197,94,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(56,189,248,.04) 0%,transparent 50%);}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:40px 44px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(34,197,94,.08);animation:slideUp .3s ease;}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo img{height:44px;filter:drop-shadow(0 0 12px rgba(34,197,94,.4))}
+.login-logo-fb{font-family:var(--font-head);font-size:26px;font-weight:700;color:var(--green);display:none}
+.login-title{font-family:var(--font-head);font-size:20px;font-weight:600;text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:28px}
+.login-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.login-group label{font-size:11px;font-weight:700;letter-spacing:.7px;color:var(--text-muted);text-transform:uppercase}
+.login-group input{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-family:var(--font-body);font-size:14px;outline:none;transition:border .2s;width:100%;}
+.login-group input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-glow)}
+.role-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.role-tab{padding:9px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s;color:var(--text-muted);background:var(--surface);}
+.role-tab.active{border-color:var(--green);color:var(--green);background:var(--green-glow)}
+.login-btn{width:100%;padding:11px;background:var(--green);color:#0a1a0a;border:none;border-radius:8px;font-family:var(--font-head);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.login-btn:hover{background:#4ade80;box-shadow:0 0 20px var(--green-glow)}
+.login-hint{font-size:11px;color:var(--text-muted);text-align:center;margin-top:14px;line-height:1.8}
+.login-hint code{background:var(--surface);padding:1px 6px;border-radius:4px;color:var(--green);font-size:11px}
+.login-err{color:var(--red);font-size:12px;text-align:center;margin-top:10px;display:none}
+
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,.5);}
+.logo-wrap{display:flex;align-items:center;gap:14px}
+.logo-wrap img{height:38px;filter:drop-shadow(0 0 8px rgba(34,197,94,.3))}
+.logo-divider{width:1px;height:28px;background:var(--border)}
+.app-title{font-family:var(--font-head);font-size:15px;font-weight:600;color:var(--text);letter-spacing:.3px}
+.app-sub{font-size:11px;color:var(--text-muted);margin-top:1px}
+.header-right{display:flex;align-items:center;gap:10px}
+.badge-live{background:var(--green-glow);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.5px;display:flex;align-items:center;gap:5px;}
+.badge-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideLeft{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+.user-chip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;transition:border-color .2s;}
+.user-chip:hover{border-color:var(--green)}
+.user-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.avatar-admin{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff}
+.avatar-user{background:linear-gradient(135deg,#38bdf8,#0284c7);color:#fff}
+.user-chip-name{font-weight:500;color:var(--text)}
+.role-badge{font-size:10px;font-weight:700;letter-spacing:.5px;padding:1px 6px;border-radius:4px;text-transform:uppercase}
+.role-admin{background:rgba(34,197,94,.2);color:var(--green)}
+.role-user{background:rgba(56,189,248,.2);color:var(--blue)}
+.btn-logout{background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:5px 10px;border-radius:7px;cursor:pointer;font-size:12px;transition:all .15s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* LAYOUT */
+.layout{display:flex;height:calc(100vh - 64px)}
+aside{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;gap:4px;overflow-y:auto;}
+.aside-label{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--text-dim);padding:6px 18px 4px;text-transform:uppercase;margin-top:8px}
+.aside-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;transition:background .15s,color .15s;font-size:13px;color:var(--text-muted);border-left:3px solid transparent;}
+.aside-item:hover{background:var(--card);color:var(--text)}
+.aside-item.active{background:var(--green-glow);color:var(--green);border-left-color:var(--green);font-weight:500}
+.aside-item svg{flex-shrink:0;opacity:.7}.aside-item.active svg{opacity:1}
+.aside-count{margin-left:auto;font-size:11px;background:var(--card);padding:1px 7px;border-radius:10px;color:var(--text-muted)}
+.aside-item.active .aside-count{background:var(--green-dim);color:#fff}
+main{flex:1;overflow:auto;padding:24px}
+.section{display:none}.section.active{display:block}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stats-row.cols3{grid-template-columns:repeat(3,1fr)}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-a),var(--accent-b));}
+.stat-card.green{--accent-a:#22c55e;--accent-b:#4ade80}.stat-card.blue{--accent-a:#38bdf8;--accent-b:#60a5fa}
+.stat-card.orange{--accent-a:#f97316;--accent-b:#fb923c}.stat-card.red{--accent-a:#ef4444;--accent-b:#f87171}
+.stat-card.purple{--accent-a:#a855f7;--accent-b:#c084fc}
+.stat-label{font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
+.stat-value{font-family:var(--font-head);font-size:28px;font-weight:700;line-height:1}
+.stat-sub{font-size:11px;color:var(--text-muted);margin-top:6px}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted)}
+input[type=text],input[type=email],input[type=password],select{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);font-family:var(--font-body);font-size:13px;padding:8px 12px 8px 34px;width:100%;outline:none;transition:border .2s;}
+input[type=text]:focus,input[type=email]:focus,input[type=password]:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-glow)}
+select{padding-left:12px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font-body);font-size:13px;font-weight:500;border:none;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn-primary{background:var(--green);color:#0a1a0a}.btn-primary:hover{background:#4ade80;box-shadow:0 0 16px var(--green-glow)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{border-color:var(--green);color:var(--green)}
+.btn-danger{background:transparent;border:1px solid #ef444455;color:var(--red)}.btn-danger:hover{background:#ef444420;border-color:var(--red)}
+.btn-blue{background:transparent;border:1px solid #38bdf855;color:var(--blue)}.btn-blue:hover{background:rgba(56,189,248,.1)}
+
+/* TABLE */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--surface);font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);padding:11px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+thead th:hover{color:var(--text)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(34,197,94,.04)}
+td{padding:10px 14px;font-size:13px;color:var(--text);vertical-align:middle}
+td.num{color:var(--text-muted);font-size:12px}
+.td-brand{font-weight:500}
+.tag-cat{font-size:10px;font-weight:600;letter-spacing:.5px;padding:2px 8px;border-radius:4px;display:inline-block;}
+.pill{font-size:11px;font-weight:600;letter-spacing:.3px;padding:3px 10px;border-radius:20px;display:inline-block;white-space:nowrap;}
+.pill-available{background:rgba(34,197,94,.15);color:var(--green)}.pill-dispatched{background:rgba(56,189,248,.15);color:var(--blue)}
+.pill-maintenance{background:rgba(234,179,8,.15);color:var(--yellow)}.pill-damaged{background:rgba(239,68,68,.15);color:var(--red)}
+.pill-returned{background:rgba(168,85,247,.15);color:#a855f7}.pill-active{background:rgba(34,197,94,.15);color:var(--green)}
+.pill-inactive{background:rgba(107,128,153,.15);color:var(--text-muted)}
+.cond-new{color:#4ade80}.cond-good{color:var(--blue)}.cond-fair{color:var(--yellow)}.cond-damaged{color:var(--red)}
+.empty{text-align:center;padding:60px 20px;color:var(--text-muted)}
+.empty svg{margin-bottom:12px;opacity:.3}
+
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;width:660px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);animation:slideUp .2s;}
+.modal-sm{width:480px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.modal-head h2{font-family:var(--font-head);font-size:17px;font-weight:600}
+.modal-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:20px;line-height:1;transition:color .15s}
+.modal-close:hover{color:var(--red)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+label{font-size:11px;font-weight:600;letter-spacing:.6px;color:var(--text-muted);text-transform:uppercase}
+.form-group input,.form-group select,.form-group textarea{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-family:var(--font-body);font-size:13px;outline:none;width:100%;transition:border .2s;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-glow);}
+textarea{resize:vertical;min-height:70px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+
+/* USER MANAGEMENT */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.section-head h2{font-family:var(--font-head);font-size:18px;font-weight:600}
+.user-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;display:flex;align-items:flex-start;gap:16px;margin-bottom:10px;transition:background .15s;}
+.user-card:hover{background:#1a2436}
+.user-avatar-lg{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;}
+.user-info{flex:1}
+.user-name{font-weight:600;font-size:14px;margin-bottom:3px}
+.user-email{font-size:12px;color:var(--text-muted)}
+.user-meta{display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap}
+.user-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.permission-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.perm-item{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:6px;padding:8px 10px;font-size:12px;}
+.perm-toggle{width:32px;height:18px;border-radius:10px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.perm-toggle.on{background:var(--green)}.perm-toggle.off{background:var(--border)}
+.perm-toggle::after{content:'';width:12px;height:12px;background:#fff;border-radius:50%;position:absolute;top:3px;transition:left .2s;}
+.perm-toggle.on::after{left:17px}.perm-toggle.off::after{left:3px}
+
+/* ALERTS */
+.alerts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.alert-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+.alert-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.alert-card-title{font-size:13px;font-weight:600}
+.alert-toggle{width:38px;height:21px;border-radius:11px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.alert-toggle.on{background:var(--green)}.alert-toggle.off{background:var(--border)}
+.alert-toggle::after{content:'';width:15px;height:15px;background:#fff;border-radius:50%;position:absolute;top:3px;transition:left .2s;}
+.alert-toggle.on::after{left:20px}.alert-toggle.off::after{left:3px}
+.alert-desc{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:10px}
+.email-chip{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:3px 8px;font-size:11px;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px;margin:3px;}
+.email-chip button{cursor:pointer;color:var(--text-dim);background:none;border:none;font-size:13px;line-height:1;padding:0;transition:color .15s}
+.email-chip button:hover{color:var(--red)}
+.add-email-row{display:flex;gap:6px;margin-top:10px}
+.add-email-row input{flex:1;padding:7px 10px;font-size:12px;border-radius:6px}
+.alert-log-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:20px}
+.alert-log-head{background:var(--surface);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.alert-log-head h3{font-size:13px;font-weight:600;font-family:var(--font-head)}
+.log-item{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;font-size:12px;}
+.log-item:last-child{border-bottom:none}
+.log-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:1px}
+.log-body{flex:1}
+.log-time{color:var(--text-muted);font-size:11px;margin-top:3px}
+.log-sent{color:var(--green);font-size:11px;white-space:nowrap;padding-top:2px}
+
+/* PHOTO */
+.photo-upload-zone{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);position:relative;overflow:hidden;}
+.photo-upload-zone:hover{border-color:var(--green);background:var(--green-glow)}
+.photo-upload-zone.has-photo{border-style:solid;border-color:var(--green);padding:10px}
+.photo-upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.photo-preview{width:100%;max-height:160px;object-fit:contain;border-radius:6px;display:block;margin:0 auto}
+.photo-placeholder{color:var(--text-muted);font-size:12px}
+.photo-placeholder svg{margin-bottom:8px;opacity:.4}
+.photo-placeholder strong{display:block;font-size:13px;color:var(--text);margin-bottom:3px}
+.photo-change-hint{font-size:11px;color:var(--text-muted);margin-top:6px}
+.photo-remove{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.lightbox img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:10px}
+.lightbox-close{position:absolute;top:20px;right:28px;background:none;border:none;color:#fff;font-size:30px;cursor:pointer}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.detail-row{background:var(--surface);border-radius:8px;padding:10px 14px}
+.detail-key{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px}
+.detail-val{font-size:13px;color:var(--text);word-break:break-all}
+.detail-row.full{grid-column:1/-1}
+.detail-photo{grid-column:1/-1;background:var(--surface);border-radius:10px;padding:14px;text-align:center}
+.detail-photo img{max-width:100%;max-height:240px;object-fit:contain;border-radius:8px;border:1px solid var(--border)}
+.detail-photo-empty{color:var(--text-muted);font-size:13px;padding:20px 0}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;min-width:240px;box-shadow:var(--shadow);animation:slideLeft .3s;}
+.toast-success{border-left:3px solid var(--green)}.toast-error{border-left:3px solid var(--red)}.toast-info{border-left:3px solid var(--blue)}
+.toast-icon{font-size:16px}
+
+@media(max-width:900px){
+  .stats-row{grid-template-columns:1fr 1fr}.alerts-grid{grid-template-columns:1fr}
+  .layout{flex-direction:column}
+  aside{width:100%;min-width:0;flex-direction:row;flex-wrap:wrap;padding:10px;height:auto;border-right:none;border-bottom:1px solid var(--border)}
+  .aside-label{display:none}.aside-item{padding:7px 12px;border-left:none;border-bottom:2px solid transparent;border-radius:6px}
+  .aside-item.active{border-bottom-color:var(--green);border-left-color:transparent}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <img src="https://cdn.prod.website-files.com/68ad7fede4014c36601be3d5/68ad8bd9b2939cc25296d676_logo%20(1)%201.png" alt="Vatanix" onerror="this.style.display='none';document.querySelector('.login-logo-fb').style.display='block'"/>
+      <div class="login-logo-fb">VATANIX</div>
+    </div>
+    <div class="login-title">Demo Device Tracker</div>
+    <div class="login-sub">Sign in to your account to continue</div>
+    <div style="margin-bottom:18px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px">Login As</div>
+      <div class="role-tabs">
+        <div class="role-tab active" id="tabAdmin" onclick="selectRole('admin')">🛡️ Admin</div>
+        <div class="role-tab" id="tabUser" onclick="selectRole('user')">👤 User</div>
+      </div>
+    </div>
+    <div class="login-group"><label>Email</label><input type="email" id="loginEmail" placeholder="Enter your email"/></div>
+    <div class="login-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-err" id="loginErr">Invalid credentials. Please try again.</div>
+    <div class="login-hint">
+      Use your assigned email and password.
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="appRoot" style="display:none">
+<header>
+  <div class="logo-wrap">
+    <img src="https://cdn.prod.website-files.com/68ad7fede4014c36601be3d5/68ad8bd9b2939cc25296d676_logo%20(1)%201.png" alt="Vatanix" onerror="this.style.display='none';document.getElementById('hdrTxt').style.display='block'"/>
+    <span id="hdrTxt" style="display:none;font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--green)">VATANIX</span>
+    <div class="logo-divider"></div>
+    <div><div class="app-title">Demo Device Tracker</div><div class="app-sub" id="hdrSub">Asset Management System</div></div>
+  </div>
+  <div class="header-right">
+    <span class="badge-live">LIVE</span>
+    <div class="user-chip">
+      <div class="user-avatar" id="hdrAvatar"></div>
+      <span class="user-chip-name" id="hdrName"></span>
+      <span class="role-badge" id="hdrRole"></span>
+    </div>
+    <button class="btn btn-outline" id="addDeviceBtn" onclick="openModal('add')" style="display:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Device
+    </button>
+    <button class="btn-logout" onclick="doLogout()">Logout</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside id="sidebar">
+    <div class="aside-label">Dashboard</div>
+    <div class="aside-item active" id="nav-devices" onclick="showSection('devices',this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      All Devices <span class="aside-count" id="cnt-All">0</span>
+    </div>
+    <div class="aside-label">Categories</div>
+    <div class="aside-item" data-cat="Video Conferencing" onclick="filterCat(this,'Video Conferencing')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      Video Conf. <span class="aside-count" id="cnt-Video Conferencing">0</span>
+    </div>
+    <div class="aside-item" data-cat="Display / LED" onclick="filterCat(this,'Display / LED')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Display / LED <span class="aside-count" id="cnt-Display / LED">0</span>
+    </div>
+    <div class="aside-item" data-cat="AV & PA system" onclick="filterCat(this,'AV & PA system')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      AV &amp; PA System <span class="aside-count" id="cnt-AV & PA system">0</span>
+    </div>
+    <div class="aside-item" data-cat="CCTV" onclick="filterCat(this,'CCTV')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      CCTV <span class="aside-count" id="cnt-CCTV">0</span>
+    </div>
+    <div class="aside-item" data-cat="Network Device" onclick="filterCat(this,'Network Device')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="6" height="6"/><path d="M3 3h6v6H3zM15 3h6v6h-6zM15 15h6v6h-6zM3 15h6v6H3z"/></svg>
+      Network <span class="aside-count" id="cnt-Network Device">0</span>
+    </div>
+    <div class="aside-item" data-cat="Access control" onclick="filterCat(this,'Access control')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Access Control <span class="aside-count" id="cnt-Access control">0</span>
+    </div>
+    <div class="aside-item" data-cat="accessories" onclick="filterCat(this,'accessories')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Accessories <span class="aside-count" id="cnt-accessories">0</span>
+    </div>
+    <div class="aside-item" data-cat="server and storage" onclick="filterCat(this,'server and storage')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+      Server &amp; Storage <span class="aside-count" id="cnt-server and storage">0</span>
+    </div>
+    <div class="aside-item" data-cat="Others" onclick="filterCat(this,'Others')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      Others <span class="aside-count" id="cnt-Others">0</span>
+    </div>
+    <div id="adminNav" style="display:none">
+      <div class="aside-label">Admin Panel</div>
+      <div class="aside-item" id="nav-users" onclick="showSection('users',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        User Management
+      </div>
+      <div class="aside-item" id="nav-alerts" onclick="showSection('alerts',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1.2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Email Alerts
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- DEVICES -->
+    <div class="section active" id="section-devices">
+      <div class="stats-row">
+        <div class="stat-card green"><div class="stat-label">Total Devices</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub">All categories</div></div>
+        <div class="stat-card blue"><div class="stat-label">Available</div><div class="stat-value" id="statAvail">0</div><div class="stat-sub">Ready to dispatch</div></div>
+        <div class="stat-card orange"><div class="stat-label">Dispatched</div><div class="stat-value" id="statDisp">0</div><div class="stat-sub">Currently out</div></div>
+        <div class="stat-card red"><div class="stat-label">Maintenance</div><div class="stat-value" id="statMaint">0</div><div class="stat-sub">Under service</div></div>
+      </div>
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Search brand, model, serial, customer…" oninput="applyFilters()"/>
+        </div>
+        <select id="statusFilter" onchange="applyFilters()">
+          <option value="">All Status</option>
+          <option>available</option><option>dispatched</option><option>maintenance</option><option>damaged</option><option>returned</option>
+        </select>
+        <select id="condFilter" onchange="applyFilters()">
+          <option value="">All Condition</option>
+          <option>new</option><option>good</option><option>fair</option><option>damaged</option>
+        </select>
+        <input type="file" id="importFile" accept=".csv" style="display:none" onchange="importCSV(event)"/>
+        <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import CSV
+        </button>
+        <button class="btn btn-primary" onclick="exportCSV()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th onclick="sortBy('sno')">S.No</th>
+            <th onclick="sortBy('category')">Category</th>
+            <th onclick="sortBy('brand')">Brand</th>
+            <th onclick="sortBy('model')">Device Model</th>
+            <th onclick="sortBy('serial')">Serial No</th>
+            <th onclick="sortBy('assetTag')">Asset Tag</th>
+            <th onclick="sortBy('condition')">Condition</th>
+            <th onclick="sortBy('status')">Status</th>
+            <th onclick="sortBy('customer')">Customer</th>
+            <th onclick="sortBy('contact')">Contact</th>
+            <th onclick="sortBy('location')">Location</th>
+            <th onclick="sortBy('approver')">Approver</th>
+            <th onclick="sortBy('presales')">Presales Eng.</th>
+            <th onclick="sortBy('sales')">Sales Person</th>
+            <th onclick="sortBy('dispatchDate')">Dispatch Date</th>
+            <th onclick="sortBy('expectedReturn')">Exp. Return</th>
+            <th onclick="sortBy('purchaseDate')">Purchase Date</th>
+            <th>Remarks</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty" style="display:none">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <div style="font-size:16px;font-weight:600;margin-bottom:6px">No devices found</div>
+          <div>Try a different filter or add a new device</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="section" id="section-users">
+      <div class="section-head">
+        <h2>👥 User Management</h2>
+        <button class="btn btn-primary" onclick="openUserModal(null)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create User
+        </button>
+      </div>
+      <div class="stats-row cols3">
+        <div class="stat-card green"><div class="stat-label">Total Users</div><div class="stat-value" id="statTotalUsers">0</div><div class="stat-sub">Registered accounts</div></div>
+        <div class="stat-card blue"><div class="stat-label">Active</div><div class="stat-value" id="statActiveUsers">0</div><div class="stat-sub">Currently active</div></div>
+        <div class="stat-card purple"><div class="stat-label">Admins</div><div class="stat-value" id="statAdmins">0</div><div class="stat-sub">Admin accounts</div></div>
+      </div>
+      <div id="userList"></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="section" id="section-alerts">
+      <div class="section-head">
+        <h2>📧 Email Alert Settings</h2>
+        <button class="btn btn-primary" onclick="sendTestAlert()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send Test Alert
+        </button>
+      </div>
+      <div class="alerts-grid" id="alertsGrid"></div>
+      <div class="table-wrap" style="padding:18px 20px;margin-bottom:20px">
+        <div style="font-family:var(--font-head);font-size:14px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          🌐 Global Alert Recipients
+          <span style="font-size:11px;color:var(--text-muted);font-weight:400">All alerts go to these emails</span>
+        </div>
+        <div id="globalEmailList" style="display:flex;flex-wrap:wrap"></div>
+        <div class="add-email-row">
+          <input type="email" id="globalEmailInput" placeholder="Add recipient email address…"/>
+          <button class="btn btn-outline" style="padding:6px 14px;font-size:12px" onclick="addGlobalEmail()">+ Add</button>
+        </div>
+      </div>
+      <div class="alert-log-wrap">
+        <div class="alert-log-head">
+          <h3>📋 Alert Activity Log</h3>
+          <button class="btn btn-outline" style="padding:4px 10px;font-size:11px" onclick="clearLog()">Clear Log</button>
+        </div>
+        <div id="alertLogBody"><div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">No alerts sent yet.</div></div>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modalBackdrop" style="display:none" onclick="if(event.target===this)closeModalDirect()">
+  <div class="modal" id="modalBox">
+    <div class="modal-head">
+      <h2 id="modalTitle">Modal</h2>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ════ AUTH ════
+let currentUser=null, loginRole='admin';
+const DEFAULT_USERS=[
+  {id:1,name:'Admin User',email:'admin@vatanix.com',password:'admin123',role:'admin',status:'active',permissions:{view:true,add:true,edit:true,delete:true,export:true,import:true},created:'2024-01-01',lastLogin:''},
+  {id:2,name:'Demo User',email:'user@vatanix.com',password:'user123',role:'user',status:'active',permissions:{view:true,add:false,edit:false,delete:false,export:true,import:false},created:'2024-06-15',lastLogin:''},
+];
+let appUsers=JSON.parse(localStorage.getItem('vtx_users')||'null')||JSON.parse(JSON.stringify(DEFAULT_USERS));
+function saveUsers(){localStorage.setItem('vtx_users',JSON.stringify(appUsers));}
+
+function selectRole(r){
+  loginRole=r;
+  document.getElementById('tabAdmin').classList.toggle('active',r==='admin');
+  document.getElementById('tabUser').classList.toggle('active',r==='user');
+  // Do not prefill demo credentials
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPassword').value='';
+}
+
+function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPassword').value;
+  const err=document.getElementById('loginErr');err.style.display='none';
+  const user=appUsers.find(u=>u.email===email&&u.password===pass&&u.status==='active');
+  if(!user){err.style.display='block';return;}
+  currentUser=user;user.lastLogin=new Date().toLocaleString();saveUsers();
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appRoot').style.display='block';
+  bootApp();
+}
+function doLogout(){
+  currentUser=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appRoot').style.display='none';
+  document.getElementById('loginPassword').value='';
+  devices=[];filteredDevices=[];
+}
+function bootApp(){
+  const av=document.getElementById('hdrAvatar');
+  av.textContent=currentUser.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  av.className='user-avatar '+(currentUser.role==='admin'?'avatar-admin':'avatar-user');
+  document.getElementById('hdrName').textContent=currentUser.name;
+  const rb=document.getElementById('hdrRole');rb.textContent=currentUser.role;
+  rb.className='role-badge '+(currentUser.role==='admin'?'role-admin':'role-user');
+  document.getElementById('hdrSub').textContent=currentUser.role==='admin'?'Admin Panel — Full Access':'View Mode — Read Only';
+  document.getElementById('adminNav').style.display=currentUser.role==='admin'?'block':'none';
+  document.getElementById('addDeviceBtn').style.display=currentUser.permissions.add?'flex':'none';
+  seedData();applyFilters();renderUserStats();
+}
+
+// ════ DATA ════
+const CATEGORIES=['Video Conferencing','Display / LED','AV & PA system','CCTV','accessories','Access control','Others','server and storage','Network Device'];
+const CAT_COLORS={'Video Conferencing':'#22c55e','Display / LED':'#38bdf8','AV & PA system':'#f97316','CCTV':'#ef4444','accessories':'#a855f7','Access control':'#eab308','server and storage':'#ec4899','Network Device':'#06b6d4','Others':'#78716c'};
+const BRANDS={'Video Conferencing':['Cisco','Logitech','DTEN','Yealink','Jabra','Aver','A&T','Neat','MaxHub','Lenovo','Barco','Owl','Crestron','Huddly','EPOS','HP-Poly'],'Display / LED':['LG','Samsung','AET','BenQ','Hikvision','MaxHub','Panasonic','Sony','ViewSonic','TCL'],'AV & PA system':['Crestron','Extron','Atlona','Shure','Biamp','JBL','QSC','ClearOne','K-Array','TOA','Bose','Bosch','Denon','Crown','Kramer','AMX','Yamaha','Harman'],'CCTV':['Honeywell','Dahua','CP Plus','Hikvision','Bosch','TP-Link','AXIS','HiFocus','Godrej','MATRIX','Hanwha','Mobotix','Vivotek','Samsung','Panasonic','Qubo','Uniview'],'Network Device':['Cisco','Juniper','HP','Aruba','Ubiquiti','Netgear','D-Link','TP-Link','Ruckus','Fortinet'],'Access control':['HID','Suprema','ZKTeco','Bosch','Honeywell','Genetec','Lenel'],'server and storage':['Dell','HP','IBM','Lenovo','Supermicro','NetApp','EMC']};
+let devices=[],filteredDevices=[],sortField='sno',sortDir=1,activeCat='All',page=1,perPage=9999,editId=null;
+
+function seedData(){
+  if(devices.length)return;
+  [{category:'Video Conferencing',brand:'Cisco',model:'Webex Board 55',serial:'CWB55-001',assetTag:'VTX-001',condition:'new',status:'available',customer:'',contact:'',location:'Chennai HQ',approver:'Suresh Babu',presales:'Jerin Raj',sales:'Rengaraj',dispatchDate:'',expectedReturn:'',purchaseDate:'2025-01-10',remarks:'Brand new unit'},
+   {category:'Video Conferencing',brand:'Logitech',model:'Rally Bar',serial:'LRB-2024-002',assetTag:'VTX-002',condition:'good',status:'dispatched',customer:'Infosys Ltd',contact:'9876543210',location:'Bangalore',approver:'Veeramani',presales:'Jerin Raj',sales:'Suresh',dispatchDate:'2026-03-01',expectedReturn:'2026-04-01',purchaseDate:'2024-06-15',remarks:''},
+   {category:'Display / LED',brand:'Samsung',model:'QMR-B 75"',serial:'SAM-QMR-003',assetTag:'VTX-003',condition:'new',status:'available',customer:'',contact:'',location:'Warehouse A',approver:'Suresh Babu',presales:'',sales:'Rengaraj',dispatchDate:'',expectedReturn:'',purchaseDate:'2025-03-20',remarks:'Unused'},
+   {category:'Display / LED',brand:'LG',model:'86TR3BF-B',serial:'LG86-004',assetTag:'VTX-004',condition:'good',status:'dispatched',customer:'TCS Chennai',contact:'9123456789',location:'TCS Campus',approver:'Jerin Raj',presales:'Suresh',sales:'Veeramani',dispatchDate:'2026-02-15',expectedReturn:'2026-05-15',purchaseDate:'2024-11-01',remarks:'POC unit'},
+   {category:'AV & PA system',brand:'Shure',model:'MXA910',serial:'SHR-MXA-005',assetTag:'VTX-005',condition:'good',status:'maintenance',customer:'',contact:'',location:'Service Center',approver:'Suresh Babu',presales:'',sales:'',dispatchDate:'',expectedReturn:'',purchaseDate:'2024-08-10',remarks:'Mic array servicing'},
+   {category:'CCTV',brand:'Hikvision',model:'DS-2CD2143G2-I',serial:'HIK-DS-006',assetTag:'VTX-006',condition:'fair',status:'available',customer:'',contact:'',location:'Warehouse B',approver:'Veeramani',presales:'',sales:'Rengaraj',dispatchDate:'',expectedReturn:'',purchaseDate:'2024-04-05',remarks:'Minor cosmetic scratches'},
+   {category:'Network Device',brand:'Cisco',model:'Catalyst 9300',serial:'CSC-CAT-007',assetTag:'VTX-007',condition:'new',status:'available',customer:'',contact:'',location:'Chennai HQ',approver:'Jerin Raj',presales:'Suresh',sales:'',dispatchDate:'',expectedReturn:'',purchaseDate:'2025-07-01',remarks:''},
+   {category:'Access control',brand:'HID',model:'iCLASS SE R10',serial:'HID-SE-008',assetTag:'VTX-008',condition:'good',status:'dispatched',customer:'Wipro Ltd',contact:'9988776655',location:'Wipro Campus',approver:'Suresh Babu',presales:'',sales:'Jerin Raj',dispatchDate:'2026-01-20',expectedReturn:'2026-06-20',purchaseDate:'2025-02-14',remarks:'Access card readers'},
+   {category:'server and storage',brand:'Dell',model:'PowerEdge R740',serial:'DEL-R740-009',assetTag:'VTX-009',condition:'new',status:'available',customer:'',contact:'',location:'Warehouse A',approver:'Veeramani',presales:'Suresh',sales:'Rengaraj',dispatchDate:'',expectedReturn:'',purchaseDate:'2025-09-01',remarks:'Demo server'},
+   {category:'Video Conferencing',brand:'Yealink',model:'MVC940',serial:'YLK-940-010',assetTag:'VTX-010',condition:'good',status:'returned',customer:'Cognizant',contact:'',location:'Chennai HQ',approver:'Jerin Raj',presales:'',sales:'Suresh',dispatchDate:'2025-11-01',expectedReturn:'2026-02-01',purchaseDate:'2024-12-10',remarks:'Returned after demo'},
+  ].forEach((d,i)=>devices.push({...d,sno:i+1,id:Date.now()+i,photo:''}));
+}
+
+// ════ SECTION NAV ════
+function showSection(name,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.aside-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('section-'+name).classList.add('active');
+  if(el)el.classList.add('active');
+  activeCat='All';
+  if(name==='users')renderUsers();
+  if(name==='alerts')renderAlerts();
+}
+
+// ════ RENDER TABLE ════
+function render(){
+  updateStats();updateCounts();
+  const body=document.getElementById('tableBody');
+  const pageData=filteredDevices.slice((page-1)*perPage,page*perPage);
+  document.getElementById('emptyState').style.display=filteredDevices.length?'none':'block';
+  const canEdit=currentUser?.permissions?.edit||currentUser?.role==='admin';
+  const canDel=currentUser?.permissions?.delete||currentUser?.role==='admin';
+  body.innerHTML=pageData.map(d=>`
+    <tr onclick="viewDevice(${d.id})">
+      <td class="num">${d.sno}</td>
+      <td><span class="tag-cat" style="background:${CAT_COLORS[d.category]||'#78716c'}22;color:${CAT_COLORS[d.category]||'#78716c'}">${d.category}</span></td>
+      <td class="td-brand">${d.brand||'—'}</td>
+      <td>${d.model||'—'}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${d.serial||'—'}</td>
+      <td style="font-size:12px">${d.assetTag||'—'}</td>
+      <td><span class="cond-${(d.condition||'').toLowerCase()}">${d.condition||'—'}</span></td>
+      <td><span class="pill pill-${(d.status||'available').toLowerCase()}">${d.status||'available'}</span></td>
+      <td style="font-size:12px">${d.customer||'—'}</td>
+      <td style="font-size:12px">${d.contact||'—'}</td>
+      <td style="font-size:12px">${d.location||'—'}</td>
+      <td style="font-size:12px">${d.approver||'—'}</td>
+      <td style="font-size:12px">${d.presales||'—'}</td>
+      <td style="font-size:12px">${d.sales||'—'}</td>
+      <td style="font-size:12px">${d.dispatchDate||'—'}</td>
+      <td style="font-size:12px">${d.expectedReturn||'—'}</td>
+      <td style="font-size:12px">${d.purchaseDate||'—'}</td>
+      <td style="font-size:12px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${d.remarks||''}">${d.remarks||'—'}</td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap">
+        ${canEdit?`<button class="btn btn-outline" style="padding:4px 9px;font-size:11px" onclick="openModal('edit',${d.id})">Edit</button>`:''}
+        <button class="btn btn-outline" style="padding:4px 7px;font-size:11px;margin-left:3px" onclick="quickPhoto(${d.id})" title="Photo">📷</button>
+        ${canDel?`<button class="btn btn-danger" style="padding:4px 9px;font-size:11px;margin-left:3px" onclick="deleteDevice(${d.id})">Del</button>`:''}
+      </td>
+    </tr>`).join('');
+}
+function updateStats(){
+  document.getElementById('statTotal').textContent=devices.length;
+  document.getElementById('statAvail').textContent=devices.filter(d=>d.status==='available').length;
+  document.getElementById('statDisp').textContent=devices.filter(d=>d.status==='dispatched').length;
+  document.getElementById('statMaint').textContent=devices.filter(d=>d.status==='maintenance').length;
+}
+function updateCounts(){
+  const all={};CATEGORIES.forEach(c=>all[c]=0);
+  devices.forEach(d=>{if(all[d.category]!==undefined)all[d.category]++;});
+  document.getElementById('cnt-All').textContent=devices.length;
+  CATEGORIES.forEach(c=>{const el=document.getElementById('cnt-'+c);if(el)el.textContent=all[c]||0;});
+}
+
+// ════ FILTERS ════
+function applyFilters(){
+  const q=(document.getElementById('searchInput')?.value||'').toLowerCase();
+  const st=document.getElementById('statusFilter')?.value||'';
+  const cn=document.getElementById('condFilter')?.value||'';
+  filteredDevices=devices.filter(d=>{
+    if(activeCat!=='All'&&d.category!==activeCat)return false;
+    if(st&&d.status!==st)return false;
+    if(cn&&d.condition!==cn)return false;
+    if(q){const s=`${d.brand} ${d.model} ${d.serial} ${d.customer} ${d.assetTag} ${d.location}`.toLowerCase();if(!s.includes(q))return false;}
+    return true;
+  });
+  sortDevices();page=1;render();
+}
+function filterCat(el,cat){showSection('devices',el);activeCat=cat;applyFilters();}
+function sortBy(f){if(sortField===f)sortDir*=-1;else{sortField=f;sortDir=1;}sortDevices();render();}
+function sortDevices(){
+  filteredDevices.sort((a,b)=>{
+    let av=a[sortField]||'',bv=b[sortField]||'';
+    if(sortField==='sno'){av=+av;bv=+bv;}else{av=String(av).toLowerCase();bv=String(bv).toLowerCase();}
+    return av<bv?-sortDir:av>bv?sortDir:0;
+  });
+}
+
+// ════ DEVICE MODAL ════
+function openModal(mode,id){
+  editId=id||null;
+  const d=id?devices.find(x=>x.id===id):{};
+  document.getElementById('modalBox').className='modal';
+  document.getElementById('modalTitle').textContent=id?'Edit Device':'Add Device';
+  if(mode==='view'){viewDevice(id);return;}
+  const cats=CATEGORIES.map(c=>`<option ${d.category===c?'selected':''}>${c}</option>`).join('');
+  const statuses=['available','dispatched','maintenance','damaged','returned'].map(s=>`<option ${d.status===s?'selected':''}>${s}</option>`).join('');
+  const conds=['new','good','fair','damaged'].map(c=>`<option ${d.condition===c?'selected':''}>${c}</option>`).join('');
+  const photoHtml=d.photo
+    ?`<button class="photo-remove" onclick="removePhoto(event)">✕</button><img id="photoPreviewImg" class="photo-preview" src="${d.photo}"/><div class="photo-change-hint">Click to change photo</div>`
+    :`<div class="photo-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Click to upload device photo</strong>JPG, PNG, WEBP — max 5MB</div>`;
+  document.getElementById('modalContent').innerHTML=`
+    <div class="form-grid">
+      <div class="form-group"><label>Category</label><select id="f-cat" onchange="updateBrandList()">${cats}</select></div>
+      <div class="form-group"><label>Brand</label><input type="text" id="f-brand" value="${d.brand||''}" list="brandList" placeholder="e.g. Cisco"/><datalist id="brandList"></datalist></div>
+      <div class="form-group"><label>Device Model</label><input type="text" id="f-model" value="${d.model||''}" placeholder="e.g. Webex Board 55"/></div>
+      <div class="form-group"><label>Serial No</label><input type="text" id="f-serial" value="${d.serial||''}" placeholder="e.g. SN-001"/></div>
+      <div class="form-group"><label>Asset Tag</label><input type="text" id="f-asset" value="${d.assetTag||''}" placeholder="e.g. VTX-001"/></div>
+      <div class="form-group"><label>Condition</label><select id="f-cond">${conds}</select></div>
+      <div class="form-group"><label>Status</label><select id="f-status">${statuses}</select></div>
+      <div class="form-group"><label>Customer</label><input type="text" id="f-customer" value="${d.customer||''}" placeholder="Customer name"/></div>
+      <div class="form-group"><label>Contact</label><input type="text" id="f-contact" value="${d.contact||''}" placeholder="Phone / Email"/></div>
+      <div class="form-group"><label>Location</label><input type="text" id="f-location" value="${d.location||''}" placeholder="e.g. Chennai HQ"/></div>
+      <div class="form-group"><label>Approver</label><input type="text" id="f-approver" value="${d.approver||''}"/></div>
+      <div class="form-group"><label>Presales Engineer</label><input type="text" id="f-presales" value="${d.presales||''}"/></div>
+      <div class="form-group"><label>Sales Person</label><input type="text" id="f-sales" value="${d.sales||''}"/></div>
+      <div class="form-group"><label>Dispatch Date</label><input type="date" id="f-dispatch" value="${d.dispatchDate||''}"/></div>
+      <div class="form-group"><label>Expected Return</label><input type="date" id="f-return" value="${d.expectedReturn||''}"/></div>
+      <div class="form-group"><label>Purchase Date</label><input type="date" id="f-purchase" value="${d.purchaseDate||''}"/></div>
+      <div class="form-group full"><label>Remarks</label><textarea id="f-remarks">${d.remarks||''}</textarea></div>
+      <div class="form-group full"><label>Device Photo</label>
+        <div class="photo-upload-zone ${d.photo?'has-photo':''}" id="photoZone">
+          <input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(event)"/>
+          ${photoHtml}
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDevice()">Save Device</button>
+    </div>`;
+  document.getElementById('modalBackdrop').style.display='flex';
+  updateBrandList();
+}
+function updateBrandList(){const cat=document.getElementById('f-cat')?.value;const dl=document.getElementById('brandList');if(dl)dl.innerHTML=(BRANDS[cat]||[]).map(b=>`<option value="${b}">`).join('');}
+
+function viewDevice(id){
+  const d=devices.find(x=>x.id===id);if(!d)return;
+  document.getElementById('modalBox').className='modal';
+  document.getElementById('modalTitle').textContent='Device Details';
+  const fields=[['S.No',d.sno],['Category',d.category],['Brand',d.brand],['Device Model',d.model],['Serial No',d.serial],['Asset Tag',d.assetTag],['Condition',d.condition],['Status',d.status],['Customer',d.customer],['Contact',d.contact],['Location',d.location],['Approver',d.approver],['Presales Engineer',d.presales],['Sales Person',d.sales],['Dispatch Date',d.dispatchDate],['Expected Return',d.expectedReturn],['Purchase Date',d.purchaseDate],['Remarks',d.remarks]];
+  const photoSec=d.photo?`<div class="detail-photo"><div class="detail-key" style="text-align:left;margin-bottom:8px">Device Photo</div><img src="${d.photo}" style="cursor:zoom-in" onclick="openLightbox('${d.photo}')"/><div style="font-size:11px;color:var(--text-muted);margin-top:6px">Click to enlarge</div></div>`:`<div class="detail-photo"><div class="detail-key" style="text-align:left;margin-bottom:4px">Device Photo</div><div class="detail-photo-empty">📷 No photo — <span style="color:var(--green);cursor:pointer" onclick="closeModalDirect();openModal('edit',${id})">Add Photo</span></div></div>`;
+  document.getElementById('modalContent').innerHTML=`${photoSec}<div class="detail-grid" style="margin-top:12px">${fields.map(([k,v],i)=>`<div class="detail-row ${i===17?'full':''}"><div class="detail-key">${k}</div><div class="detail-val">${v||'—'}</div></div>`).join('')}</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalDirect()">Close</button><button class="btn btn-primary" onclick="closeModalDirect();openModal('edit',${id})">Edit</button></div>`;
+  document.getElementById('modalBackdrop').style.display='flex';
+}
+
+function saveDevice(){
+  const get=id=>document.getElementById(id)?.value||'';
+  let photo='';
+  const pi=document.getElementById('photoPreviewImg');
+  if(pi)photo=pi.src;else if(editId){const ex=devices.find(x=>x.id===editId);photo=ex?.photo||'';}
+  const prevStatus=editId?devices.find(x=>x.id===editId)?.status:'';
+  const data={category:get('f-cat'),brand:get('f-brand'),model:get('f-model'),serial:get('f-serial'),assetTag:get('f-asset'),condition:get('f-cond'),status:get('f-status'),customer:get('f-customer'),contact:get('f-contact'),location:get('f-location'),approver:get('f-approver'),presales:get('f-presales'),sales:get('f-sales'),dispatchDate:get('f-dispatch'),expectedReturn:get('f-return'),purchaseDate:get('f-purchase'),remarks:get('f-remarks'),photo};
+  if(editId){
+    const idx=devices.findIndex(x=>x.id===editId);devices[idx]={...devices[idx],...data};
+    toast('Device updated','success');
+    if(data.status!==prevStatus)triggerAlert('statusChange',devices[idx]);
+    if(data.status==='dispatched'&&prevStatus!=='dispatched')triggerAlert('dispatch',devices[idx]);
+    if(data.status==='returned'&&prevStatus!=='returned')triggerAlert('return',devices[idx]);
+    if(data.status==='maintenance'&&prevStatus!=='maintenance')triggerAlert('maintenance',devices[idx]);
+  }else{
+    const sno=devices.length?Math.max(...devices.map(d=>d.sno))+1:1;
+    const nd={...data,sno,id:Date.now(),photo};devices.push(nd);
+    toast('Device added','success');triggerAlert('newDevice',nd);
+    if(devices.filter(d=>d.status==='available').length<3)triggerAlert('lowStock',{count:devices.filter(d=>d.status==='available').length});
+  }
+  closeModalDirect();applyFilters();
+}
+function deleteDevice(id){if(!confirm('Delete this device?'))return;devices=devices.filter(d=>d.id!==id);toast('Deleted','info');applyFilters();}
+function closeModalDirect(){document.getElementById('modalBackdrop').style.display='none';editId=null;}
+
+// ════ PHOTO ════
+function previewPhoto(e){
+  const file=e.target.files[0];if(!file)return;
+  if(file.size>5*1024*1024){toast('Max 5MB','error');return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{const z=document.getElementById('photoZone');z.classList.add('has-photo');z.innerHTML=`<input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(event)"/><button class="photo-remove" onclick="removePhoto(event)">✕</button><img id="photoPreviewImg" class="photo-preview" src="${ev.target.result}"/><div class="photo-change-hint">Click to change photo</div>`;};
+  reader.readAsDataURL(file);
+}
+function removePhoto(e){e.stopPropagation();const z=document.getElementById('photoZone');z.classList.remove('has-photo');z.innerHTML=`<input type="file" id="f-photo" accept="image/*" onchange="previewPhoto(event)"/><div class="photo-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><strong>Click to upload device photo</strong>JPG, PNG, WEBP — max 5MB</div>`;}
+function quickPhoto(id){openModal('edit',id);setTimeout(()=>{const z=document.getElementById('photoZone');if(z){z.style.borderColor='var(--green)';z.style.boxShadow='0 0 0 3px var(--green-glow)';}const fi=document.getElementById('f-photo');if(fi)fi.click();},300);}
+function openLightbox(src){const lb=document.createElement('div');lb.className='lightbox';lb.innerHTML=`<button class="lightbox-close" onclick="this.parentElement.remove()">✕</button><img src="${src}"/>`;lb.onclick=e=>{if(e.target===lb)lb.remove();};document.body.appendChild(lb);}
+
+// ════ IMPORT/EXPORT ════
+function exportCSV(){
+  const h=['S.No','Category','Brand','Device Model','Serial No','Asset Tag','Condition','Status','Customer','Contact','Location','Approver','Presales Engineer','Sales Person','Dispatch Date','Expected Return','Purchase Date','Remarks'];
+  const rows=devices.map(d=>[d.sno,d.category,d.brand,d.model,d.serial,d.assetTag,d.condition,d.status,d.customer,d.contact,d.location,d.approver,d.presales,d.sales,d.dispatchDate,d.expectedReturn,d.purchaseDate,d.remarks].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent([h.join(','),...rows].join('\n'));a.download=`Vatanix_DeviceLog_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast('CSV exported','success');
+}
+function importCSV(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const lines=ev.target.result.split('\n').filter(l=>l.trim());
+    const header=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+    let imp=0;
+    for(let i=1;i<lines.length;i++){
+      const vals=parseCSVLine(lines[i]);if(vals.length<3||!vals[2])continue;
+      const row={};header.forEach((h,j)=>row[h]=vals[j]||'');
+      const sno=devices.length?Math.max(...devices.map(d=>d.sno))+1:1;
+      devices.push({sno,id:Date.now()+i,photo:'',category:row['category']||'Others',brand:row['brand']||'',model:row['device model']||row['model']||'',serial:row['serial no']||'',assetTag:row['asset tag']||'',condition:row['condition']||'good',status:(row['status']||'available').trim(),customer:row['customer']||'',contact:row['contact']||'',location:row['location']||'',approver:row['approver']||'',presales:row['presales engineer']||'',sales:row['sales person']||'',dispatchDate:row['dispatch date']||'',expectedReturn:row['expected return']||'',purchaseDate:row['purchase date']||'',remarks:row['remarks']||''});imp++;
+    }
+    toast(`Imported ${imp} device(s)`,'success');applyFilters();e.target.value='';
+  };reader.readAsText(file);
+}
+function parseCSVLine(line){const r=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===','&&!inQ){r.push(cur.trim());cur='';}else cur+=c;}r.push(cur.trim());return r;}
+
+// ════ USER MANAGEMENT ════
+function renderUserStats(){
+  document.getElementById('statTotalUsers').textContent=appUsers.length;
+  document.getElementById('statActiveUsers').textContent=appUsers.filter(u=>u.status==='active').length;
+  document.getElementById('statAdmins').textContent=appUsers.filter(u=>u.role==='admin').length;
+}
+function renderUsers(){
+  renderUserStats();
+  const el=document.getElementById('userList');
+  if(!appUsers.length){el.innerHTML='<div class="empty">No users found</div>';return;}
+  el.innerHTML=appUsers.map(u=>`
+    <div class="user-card">
+      <div class="user-avatar-lg ${u.role==='admin'?'avatar-admin':'avatar-user'}">${u.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</div>
+      <div class="user-info">
+        <div class="user-name">${u.name} ${u.id===currentUser.id?'<span style="font-size:10px;color:var(--green);font-weight:400">(You)</span>':''}</div>
+        <div class="user-email">${u.email}</div>
+        <div class="user-meta">
+          <span class="role-badge ${u.role==='admin'?'role-admin':'role-user'}">${u.role}</span>
+          <span class="pill ${u.status==='active'?'pill-active':'pill-inactive'}" style="font-size:10px;padding:2px 8px">${u.status}</span>
+          <span style="font-size:11px;color:var(--text-dim)">Created: ${u.created}</span>
+          ${u.lastLogin?`<span style="font-size:11px;color:var(--text-dim)">Last login: ${u.lastLogin}</span>`:''}
+        </div>
+        <div style="margin-top:10px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Permissions</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            ${['view','add','edit','delete','export','import'].map(p=>`<span style="font-size:11px;padding:2px 9px;border-radius:4px;background:${u.permissions[p]?'rgba(34,197,94,.15)':'rgba(107,128,153,.1)'};color:${u.permissions[p]?'var(--green)':'var(--text-muted)'}">${p}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="user-actions">
+        ${u.id!==currentUser.id?`
+          <button class="btn btn-outline" style="padding:5px 11px;font-size:11px" onclick="openUserModal(${u.id})">Edit</button>
+          <button class="btn btn-blue" style="padding:5px 11px;font-size:11px" onclick="toggleUserStatus(${u.id})">${u.status==='active'?'Deactivate':'Activate'}</button>
+          <button class="btn btn-danger" style="padding:5px 11px;font-size:11px" onclick="deleteUser(${u.id})">Delete</button>
+        `:`<span style="font-size:11px;color:var(--text-muted);padding:5px">Current session</span>`}
+      </div>
+    </div>`).join('');
+}
+function openUserModal(id){
+  const u=id?appUsers.find(x=>x.id===id):{permissions:{view:true,add:false,edit:false,delete:false,export:true,import:false}};
+  document.getElementById('modalBox').className='modal modal-sm';
+  document.getElementById('modalTitle').textContent=id?'Edit User':'Create New User';
+  document.getElementById('modalContent').innerHTML=`
+    <div class="form-grid">
+      <div class="form-group full"><label>Full Name</label><input type="text" id="u-name" value="${u.name||''}" placeholder="Full name" style="padding:8px 12px"/></div>
+      <div class="form-group full"><label>Email Address</label><input type="email" id="u-email" value="${u.email||''}" placeholder="email@vatanix.com" style="padding:8px 12px"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="u-pass" value="" placeholder="${id?'Leave blank to keep':'Set password'}" style="padding:8px 12px"/></div>
+      <div class="form-group"><label>Role</label>
+        <select id="u-role" style="padding:8px 12px">
+          <option value="user" ${(!u.role||u.role==='user')?'selected':''}>👤 User</option>
+          <option value="admin" ${u.role==='admin'?'selected':''}>🛡️ Admin</option>
+        </select>
+      </div>
+      <div class="form-group full"><label>Account Status</label>
+        <select id="u-status" style="padding:8px 12px">
+          <option value="active" ${(!u.status||u.status==='active')?'selected':''}>✅ Active</option>
+          <option value="inactive" ${u.status==='inactive'?'selected':''}>⭕ Inactive</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Permissions</label>
+        <div class="permission-grid">
+          ${['view','add','edit','delete','export','import'].map(p=>`
+            <div class="perm-item">
+              <button class="perm-toggle ${u.permissions?.[p]?'on':'off'}" id="perm-${p}" onclick="document.getElementById('perm-${p}').classList.toggle('on');document.getElementById('perm-${p}').classList.toggle('off')"></button>
+              <span style="text-transform:capitalize;font-weight:500">${p}</span>
+              <span style="color:var(--text-muted);font-size:10px;margin-left:auto">${{view:'Read only',add:'Add devices',edit:'Edit records',delete:'Delete records',export:'Export CSV',import:'Import CSV'}[p]}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser(${id||'null'})">${id?'Update User':'Create User'}</button>
+    </div>`;
+  document.getElementById('modalBackdrop').style.display='flex';
+}
+function saveUser(id){
+  const name=document.getElementById('u-name').value.trim();
+  const email=document.getElementById('u-email').value.trim();
+  const pass=document.getElementById('u-pass').value;
+  const role=document.getElementById('u-role').value;
+  const status=document.getElementById('u-status').value;
+  if(!name||!email){toast('Name and email are required','error');return;}
+  if(!id&&!pass){toast('Password is required for new users','error');return;}
+  if(appUsers.find(u=>u.email===email&&u.id!=id)){toast('Email already exists','error');return;}
+  const perms={};
+  ['view','add','edit','delete','export','import'].forEach(p=>{perms[p]=document.getElementById('perm-'+p).classList.contains('on');});
+  if(id){
+    const idx=appUsers.findIndex(u=>u.id===id);
+    appUsers[idx]={...appUsers[idx],name,email,role,status,permissions:perms};
+    if(pass)appUsers[idx].password=pass;
+    toast('User updated successfully','success');
+  }else{
+    appUsers.push({id:Date.now(),name,email,password:pass,role,status,permissions:perms,created:new Date().toLocaleDateString(),lastLogin:''});
+    toast('User created successfully','success');
+    triggerAlert('userCreated',{name,email,role});
+  }
+  saveUsers();closeModalDirect();renderUsers();
+}
+function toggleUserStatus(id){
+  const u=appUsers.find(x=>x.id===id);if(!u)return;
+  u.status=u.status==='active'?'inactive':'active';saveUsers();renderUsers();renderUserStats();
+  toast(`User ${u.status==='active'?'activated':'deactivated'}`,'info');
+}
+function deleteUser(id){
+  if(!confirm('Delete this user? This cannot be undone.'))return;
+  appUsers=appUsers.filter(u=>u.id!==id);saveUsers();renderUsers();renderUserStats();toast('User deleted','info');
+}
+
+// ════ EMAIL ALERTS ════
+const ALERT_CONFIGS=[
+  {id:'newDevice',icon:'🆕',title:'New Device Added',desc:'Triggered when a new device is added to inventory.',color:'#22c55e',defaultOn:true},
+  {id:'dispatch',icon:'📦',title:'Device Dispatched',desc:'Triggered when a device is dispatched to a customer.',color:'#38bdf8',defaultOn:true},
+  {id:'return',icon:'↩️',title:'Device Returned',desc:'Triggered when a device is marked as returned.',color:'#eab308',defaultOn:true},
+  {id:'overdue',icon:'⚠️',title:'Overdue Return',desc:'Triggered when expected return date has passed.',color:'#ef4444',defaultOn:true},
+  {id:'maintenance',icon:'🔧',title:'Maintenance Alert',desc:'Triggered when device is sent for maintenance.',color:'#f97316',defaultOn:false},
+  {id:'userCreated',icon:'👤',title:'New User Created',desc:'Triggered when a new user account is created.',color:'#a855f7',defaultOn:true},
+  {id:'statusChange',icon:'🔄',title:'Status Changed',desc:'Triggered on any device status change.',color:'#06b6d4',defaultOn:false},
+  {id:'lowStock',icon:'📉',title:'Low Available Stock',desc:'Triggered when available devices drop below 3.',color:'#ec4899',defaultOn:false},
+];
+let alertStates=JSON.parse(localStorage.getItem('vtx_alert_states')||'null')||Object.fromEntries(ALERT_CONFIGS.map(a=>[a.id,a.defaultOn]));
+let globalEmails=JSON.parse(localStorage.getItem('vtx_emails')||'null')||['admin@vatanix.com','alerts@vatanix.com'];
+let alertLog=JSON.parse(localStorage.getItem('vtx_alert_log')||'[]');
+function saveAlertStates(){localStorage.setItem('vtx_alert_states',JSON.stringify(alertStates));}
+function saveEmails(){localStorage.setItem('vtx_emails',JSON.stringify(globalEmails));}
+function saveLog(){localStorage.setItem('vtx_alert_log',JSON.stringify(alertLog.slice(0,50)));}
+
+function renderAlerts(){
+  document.getElementById('alertsGrid').innerHTML=ALERT_CONFIGS.map(a=>`
+    <div class="alert-card" style="border-top:3px solid ${alertStates[a.id]?a.color:'var(--border)'}">
+      <div class="alert-card-head">
+        <div class="alert-card-title" style="color:${a.color}">${a.icon} ${a.title}</div>
+        <button class="alert-toggle ${alertStates[a.id]?'on':'off'}" id="atgl-${a.id}" onclick="toggleAlert('${a.id}')"></button>
+      </div>
+      <div class="alert-desc">${a.desc}</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.4px;color:${alertStates[a.id]?a.color:'var(--text-dim)'}">
+        ${alertStates[a.id]?'✅ ENABLED — alerts will be sent':'⭕ DISABLED — alerts suppressed'}
+      </div>
+    </div>`).join('');
+  renderGlobalEmails();
+  renderAlertLog();
+}
+function toggleAlert(id){
+  alertStates[id]=!alertStates[id];saveAlertStates();renderAlerts();
+  toast(`${ALERT_CONFIGS.find(a=>a.id===id)?.title} ${alertStates[id]?'enabled':'disabled'}`,'info');
+}
+function renderGlobalEmails(){
+  document.getElementById('globalEmailList').innerHTML=globalEmails.map((e,i)=>`
+    <div class="email-chip">${e}<button onclick="removeGlobalEmail(${i})">✕</button></div>`).join('');
+}
+function addGlobalEmail(){
+  const inp=document.getElementById('globalEmailInput');
+  const email=inp.value.trim();
+  if(!email||!email.includes('@')){toast('Enter a valid email','error');return;}
+  if(globalEmails.includes(email)){toast('Email already added','info');return;}
+  globalEmails.push(email);saveEmails();renderGlobalEmails();inp.value='';toast('Recipient added','success');
+}
+function removeGlobalEmail(i){globalEmails.splice(i,1);saveEmails();renderGlobalEmails();toast('Recipient removed','info');}
+
+function triggerAlert(type,data){
+  if(!alertStates[type])return;
+  const cfg=ALERT_CONFIGS.find(a=>a.id===type);if(!cfg)return;
+  const msgs={
+    newDevice:`New device added: <strong>${data.brand} ${data.model}</strong> (S/N: ${data.serial||data.assetTag||'—'})`,
+    dispatch:`Device dispatched: <strong>${data.brand} ${data.model}</strong> → Customer: ${data.customer||'Unknown'} | Location: ${data.location||'—'}`,
+    return:`Device returned: <strong>${data.brand} ${data.model}</strong> from ${data.customer||'—'}`,
+    maintenance:`Device in maintenance: <strong>${data.brand} ${data.model}</strong> — at ${data.location||'—'}`,
+    statusChange:`Status updated: <strong>${data.brand} ${data.model}</strong> is now <strong>${data.status}</strong>`,
+    userCreated:`New ${data.role} account created: <strong>${data.name}</strong> (${data.email})`,
+    lowStock:`⚠️ Low stock alert: only <strong>${data.count}</strong> device(s) currently available`,
+    overdue:`Overdue return: <strong>${data.brand} ${data.model}</strong> was due ${data.expectedReturn}`,
+  };
+  const entry={icon:cfg.icon,type:'log-'+type,msg:msgs[type]||`Alert: ${type}`,time:new Date().toLocaleString(),recipients:[...globalEmails],sent:true,color:cfg.color};
+  alertLog.unshift(entry);saveLog();
+  if(document.getElementById('section-alerts').classList.contains('active'))renderAlertLog();
+  console.log(`%c[VATANIX ALERT] ${cfg.title}`,'color:#22c55e;font-weight:bold','\nTo:',globalEmails.join(', '),'\nMessage:',entry.msg.replace(/<[^>]+>/g,''));
+}
+function renderAlertLog(){
+  const el=document.getElementById('alertLogBody');
+  if(!alertLog.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">No alerts sent yet. Activity will appear here.</div>';return;}
+  el.innerHTML=alertLog.slice(0,30).map(l=>`
+    <div class="log-item">
+      <div class="log-icon" style="background:${l.color||'#22c55e'}18">${l.icon||'📧'}</div>
+      <div class="log-body">
+        <div style="line-height:1.4">${l.msg}</div>
+        ${l.recipients&&l.recipients.length?`<div style="font-size:11px;color:var(--text-muted);margin-top:3px">To: ${l.recipients.join(', ')}</div>`:''}
+        <div class="log-time">${l.time}</div>
+      </div>
+      <div class="log-sent" style="color:${l.sent?'var(--green)':'var(--text-muted)'}">
+        ${l.sent?'✓ Sent':'Logged'}
+      </div>
+    </div>`).join('');
+}
+function sendTestAlert(){
+  triggerAlert('newDevice',{brand:'TEST',model:'Device Demo',serial:'TEST-001',assetTag:'VTX-TEST'});
+  toast(`Test alert sent to ${globalEmails.length} recipient(s)`,'success');
+}
+function clearLog(){if(!confirm('Clear all alert logs?'))return;alertLog=[];saveLog();renderAlertLog();toast('Log cleared','info');}
+
+// ════ TOAST ════
+function toast(msg,type='info'){
+  const t=document.createElement('div');
+  t.className=`toast toast-${type}`;
+  t.innerHTML=`<span class="toast-icon">${{success:'✅',error:'❌',info:'ℹ️'}[type]||'ℹ️'}</span>${msg}`;
+  document.getElementById('toastWrap').appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+// ════ INIT ════
+selectRole('admin');
+</script>
+</body>
+</html>
